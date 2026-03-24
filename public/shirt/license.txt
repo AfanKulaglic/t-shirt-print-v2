@@ -1,0 +1,11 @@
+Model Information:
+* title:	Short sleeve t-shirt
+* source:	https://sketchfab.com/3d-models/short-sleeve-t-shirt-17a03ca129c34ffb99660c8c7dd36b3b
+* author:	Richard Funners (https://sketchfab.com/richardfns)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Short sleeve t-shirt" (https://sketchfab.com/3d-models/short-sleeve-t-shirt-17a03ca129c34ffb99660c8c7dd36b3b) by Richard Funners (https://sketchfab.com/richardfns) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
