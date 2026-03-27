@@ -18,6 +18,7 @@ import {
   Bold,
   Italic,
   X,
+  Shirt,
 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { personalizableProducts } from '@/data/categories';
@@ -158,6 +159,8 @@ export default function EditorPage() {
   const [viewportHeight, setViewportHeight] = useState(typeof window !== 'undefined' ? window.innerHeight : 800);
   // Positioning mode: which element is being positioned on the grid
   const [positioningMode, setPositioningMode] = useState<'image' | 'text'>('image');
+  // Mobile tools panel visibility
+  const [showMobileTools, setShowMobileTools] = useState(false);
   
   // Track mobile keyboard visibility via visualViewport
   useEffect(() => {
@@ -838,8 +841,67 @@ export default function EditorPage() {
 
   return (
     <div className="h-[100dvh] md:h-[calc(100vh-5rem)] bg-[#0a0a0f] flex flex-col lg:flex-row overflow-hidden">
-      {/* 3D Preview - Top on mobile, right side on desktop */}
-      <div className="flex-1 relative order-1 lg:order-2 min-h-0">
+
+      {/* ════════════════ MOBILE HEADER (PRODUCT NAME + PRINT AREA SELECTOR) ════════════════ */}
+      <div className="lg:hidden bg-[#111118]/95 backdrop-blur-xl border-b border-white/[0.06]">
+        {/* Product Name Row */}
+        <div className="px-3 pt-3 pb-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-fuchsia-600 flex items-center justify-center shrink-0">
+                <Shirt className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-white font-semibold text-base leading-tight truncate">
+                  {currentProductName}
+                </h1>
+                {designCode && (
+                  <span className="text-orange-400/70 text-[10px] font-mono leading-none">#{designCode}</span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="p-2 bg-black/40 backdrop-blur-md text-white rounded-xl border border-white/[0.08] hover:bg-white/10 transition-all disabled:opacity-50"
+                title="Sačuvaj dizajn"
+              >
+                <Save className="w-4 h-4" />
+              </button>
+              <button
+                onClick={goToCheckout}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white rounded-xl font-medium transition-all text-sm shadow-lg shadow-orange-500/20 disabled:opacity-50"
+              >
+                <ShoppingCart className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Print Area Buttons Row */}
+        <div className="px-3 pb-3">
+          <div className="flex gap-1 p-1 bg-white/[0.04] rounded-xl">
+            {shirtPrintAreas.map((area) => (
+              <button
+                key={area.id}
+                onClick={() => handleAreaChange(area.id as any)}
+                className={`flex-1 py-2 px-1.5 rounded-lg text-[11px] font-medium transition-all ${
+                  selectedArea === area.id
+                    ? 'bg-gradient-to-r from-orange-500/90 to-fuchsia-500/90 text-white shadow-lg shadow-orange-500/20'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.06]'
+                }`}
+              >
+                {area.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ════════════════ 3D MODEL VIEWER ════════════════ */}
+      <div className="relative flex-1 min-h-0">
         <EditorModelViewer
           ref={viewerRef}
           modelPath={MODEL_PATH}
@@ -871,151 +933,307 @@ export default function EditorPage() {
             area: t!.area,
           }))}
         />
-        
-        {/* Top bar with product name */}
-        <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h1 className="text-white font-semibold bg-black/30 backdrop-blur-sm px-4 py-2 rounded">
-              {currentProductName}
-              {designCode && (
-                <span className="ml-2 text-xs text-orange-300">({designCode})</span>
-              )}
-            </h1>
-            <button
-              onClick={() => setShowColorPicker(!showColorPicker)}
-              className={`p-2 rounded transition-colors ${
-                showColorPicker 
-                  ? 'bg-orange-500 text-white' 
-                  : 'bg-black/30 backdrop-blur-sm text-white hover:bg-black/50'
-              }`}
-              title="Boja proizvoda"
-            >
-              <Palette className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-white/10 hover:bg-white/15 text-white rounded disabled:opacity-50 border border-white/10"
-              title="Sačuvaj dizajn"
-            >
-              <Save className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">{saving ? 'Čuvam...' : 'Sačuvaj'}</span>
-            </Button>
-            <Button 
-              onClick={goToCheckout}
-              disabled={saving}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded disabled:opacity-50"
-            >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              <span className="hidden sm:inline">{saving ? 'Čekajte...' : (isEditMode || editItemId) ? 'Ažuriraj' : 'Naruči'}</span>
-            </Button>
+
+        {/* Floating header (DESKTOP ONLY) */}
+        <div className="hidden lg:block absolute top-0 inset-x-0 z-10 p-3 sm:p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5 bg-black/40 backdrop-blur-md rounded-xl px-3 py-2 border border-white/[0.08]">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-fuchsia-600 flex items-center justify-center shrink-0">
+                <Shirt className="w-4 h-4 text-white" />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-white font-semibold text-sm leading-tight truncate">
+                  {currentProductName}
+                </h1>
+                {designCode && (
+                  <span className="text-orange-400/70 text-[10px] font-mono leading-none">#{designCode}</span>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-3 py-2 bg-black/40 backdrop-blur-md text-white rounded-xl border border-white/[0.08] hover:bg-white/10 transition-all text-sm disabled:opacity-50"
+                title="Sačuvaj dizajn"
+              >
+                <Save className="w-4 h-4" />
+                <span className="hidden sm:inline text-xs font-medium">{saving ? 'Čuvam...' : 'Sačuvaj'}</span>
+              </button>
+              <button
+                onClick={goToCheckout}
+                disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-orange-500 to-fuchsia-500 hover:from-orange-400 hover:to-fuchsia-400 text-white rounded-xl font-medium transition-all text-sm shadow-lg shadow-orange-500/20 disabled:opacity-50"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                <span className="hidden sm:inline text-xs">{saving ? 'Čekajte...' : (isEditMode || editItemId) ? 'Ažuriraj' : 'Naruči'}</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Color picker overlay */}
-        {showColorPicker && (
-          <div className="absolute bottom-4 left-4 right-4 lg:bottom-8 lg:left-8 lg:right-auto bg-black/80 backdrop-blur-lg rounded-2xl p-4 z-20">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-white font-medium">Boja proizvoda</span>
-              <button 
-                onClick={() => setShowColorPicker(false)}
-                className="text-white/60 hover:text-white"
-              >
-                <Check className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {productColors.map((color) => (
+        {/* Color picker */}
+        <AnimatePresence>
+          {showColorPicker && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 bg-black/70 backdrop-blur-xl rounded-2xl p-3 border border-white/[0.1]"
+            >
+              <div className="flex items-center gap-2">
+                {productColors.map((color) => (
+                  <button
+                    key={color.value}
+                    onClick={() => {
+                      setProductColor(color.value);
+                      setShowColorPicker(false);
+                    }}
+                    className={`w-9 h-9 rounded-full border-2 transition-all ${
+                      productColor === color.value
+                        ? 'border-orange-500 scale-110 ring-2 ring-orange-500/40'
+                        : 'border-white/20 hover:border-white/40 hover:scale-105'
+                    }`}
+                    style={{ backgroundColor: color.value }}
+                    title={color.name}
+                  />
+                ))}
                 <button
-                  key={color.value}
-                  onClick={() => {
-                    setProductColor(color.value);
-                    setShowColorPicker(false);
-                  }}
-                  className={`w-10 h-10 rounded-full border-2 transition-all ${
-                    productColor === color.value
-                      ? 'border-orange-500 ring-2 ring-orange-500/50 scale-110'
-                      : 'border-white/20 hover:border-white/50'
-                  }`}
-                  style={{ backgroundColor: color.value }}
-                  title={color.name}
-                />
-              ))}
-            </div>
-          </div>
-        )}
+                  onClick={() => setShowColorPicker(false)}
+                  className="ml-1 p-1.5 rounded-full bg-white/10 text-white/60 hover:text-white hover:bg-white/20 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Position Graphics Panel - Bottom on mobile, left on desktop */}
-      <div className="order-2 lg:order-1 bg-[#111118] flex-1 lg:flex-none lg:w-[350px] flex flex-col min-h-0 max-h-[50%] lg:max-h-full lg:h-full overflow-hidden">
-        {/* Print area selector */}
-        <div className="px-3 py-2 border-b border-white/10">
-          <span className="text-gray-400 text-xs mb-1 block">Zona za print:</span>
-          <div className="flex gap-1 items-center">
+      {/* ════════════════ ACTION TOOLBAR (MOBILE: ALWAYS VISIBLE) ════════════════ */}
+      <div className="lg:hidden px-3 py-2 bg-[#111118]/95 backdrop-blur-xl border-t border-white/[0.06]">
+        <div className="flex items-center gap-1.5">
+          <select
+            value={selectedSize}
+            onChange={(e) => setSelectedSize(e.target.value)}
+            title="Veličina (obavezno)"
+            className="h-9 min-w-0 flex-1 pl-2 pr-7 bg-white/[0.06] border border-white/[0.08] rounded-lg text-white text-xs appearance-none cursor-pointer focus:outline-none focus:border-orange-500/50 transition-colors"
+            style={{
+              backgroundImage: SIZE_SELECT_CHEVRON_BG,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 0.4rem center',
+              backgroundSize: '0.85rem 0.85rem',
+            }}
+          >
+            <option value="">Veličina*</option>
+            {GARMENT_SIZE_OPTIONS.map((size) => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+          <button
+            onClick={() => setShowColorPicker(!showColorPicker)}
+            className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all shrink-0 ${
+              showColorPicker
+                ? 'bg-orange-500 text-white ring-2 ring-orange-500/30'
+                : 'bg-white/[0.06] border border-white/[0.08] hover:border-white/15'
+            }`}
+            title="Boja proizvoda"
+          >
+            <div
+              className="w-5 h-5 rounded-full border-2 border-white/30"
+              style={{ backgroundColor: productColor }}
+            />
+          </button>
+          <div className="w-px h-5 bg-white/[0.08] mx-0.5" />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="h-9 w-9 rounded-lg bg-orange-500/15 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 hover:text-orange-300 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
+            title="Dodaj sliku"
+          >
+            {uploading ? (
+              <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <ImageIcon className="w-4 h-4" />
+            )}
+          </button>
+          {areaSupportsText && (
+            <button
+              onClick={() => {
+                if (currentText) {
+                  setEditingText(currentText);
+                  setShowTextEditor(true);
+                } else {
+                  addText();
+                }
+              }}
+              className="h-9 w-9 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/20 text-fuchsia-400 hover:bg-fuchsia-500/25 hover:text-fuchsia-300 flex items-center justify-center transition-all shrink-0"
+              title={currentText ? 'Uredi tekst' : 'Dodaj tekst'}
+            >
+              <Type className="w-4 h-4" />
+            </button>
+          )}
+          {(currentGraphic || currentText) && (
+            <button
+              onClick={handleDeleteClick}
+              className="h-9 w-9 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 hover:bg-red-500/20 hover:text-red-300 flex items-center justify-center transition-all shrink-0"
+              title="Obriši"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleImageUpload}
+        className="hidden"
+        disabled={uploading}
+      />
+
+      {/* ════════════════ TOOLS PANEL ════════════════ */}
+      <div className="lg:w-[360px] bg-[#111118]/95 backdrop-blur-xl border-t lg:border-t-0 lg:border-l border-white/[0.06] flex flex-col min-h-0 h-[45vh] lg:h-full lg:max-h-full overflow-hidden">
+
+        {/* Area Selector (DESKTOP ONLY) */}
+        <div className="hidden lg:block px-3 pt-3 pb-2">
+          <div className="flex gap-1 p-1 bg-white/[0.04] rounded-xl">
             {shirtPrintAreas.map((area) => (
               <button
                 key={area.id}
                 onClick={() => handleAreaChange(area.id as any)}
-                className={`flex-1 py-1.5 px-2 rounded text-[11px] font-medium transition-colors ${
+                className={`flex-1 py-2 px-1.5 rounded-lg text-[11px] font-medium transition-all ${
                   selectedArea === area.id
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-white/10 text-gray-300 hover:bg-white/15'
+                    ? 'bg-gradient-to-r from-orange-500/90 to-fuchsia-500/90 text-white shadow-lg shadow-orange-500/20'
+                    : 'text-gray-400 hover:text-gray-200 hover:bg-white/[0.06]'
                 }`}
               >
-                <span>{area.name}</span>
+                {area.name}
               </button>
             ))}
+          </div>
+        </div>
+
+        {/* Action Toolbar (DESKTOP ONLY) */}
+        <div className="hidden lg:block px-3 pb-2">
+          <div className="flex items-center gap-1.5">
+            <select
+              value={selectedSize}
+              onChange={(e) => setSelectedSize(e.target.value)}
+              title="Veličina (obavezno)"
+              className="h-9 min-w-0 flex-1 pl-2 pr-7 bg-white/[0.06] border border-white/[0.08] rounded-lg text-white text-xs appearance-none cursor-pointer focus:outline-none focus:border-orange-500/50 transition-colors"
+              style={{
+                backgroundImage: SIZE_SELECT_CHEVRON_BG,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 0.4rem center',
+                backgroundSize: '0.85rem 0.85rem',
+              }}
+            >
+              <option value="">Veličina*</option>
+              {GARMENT_SIZE_OPTIONS.map((size) => (
+                <option key={size} value={size}>{size}</option>
+              ))}
+            </select>
+            <button
+              onClick={() => setShowColorPicker(!showColorPicker)}
+              className={`h-9 w-9 rounded-lg flex items-center justify-center transition-all shrink-0 ${
+                showColorPicker
+                  ? 'bg-orange-500 text-white ring-2 ring-orange-500/30'
+                  : 'bg-white/[0.06] border border-white/[0.08] hover:border-white/15'
+              }`}
+              title="Boja proizvoda"
+            >
+              <div
+                className="w-5 h-5 rounded-full border-2 border-white/30"
+                style={{ backgroundColor: productColor }}
+              />
+            </button>
+            <div className="w-px h-5 bg-white/[0.08] mx-0.5" />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="h-9 w-9 rounded-lg bg-orange-500/15 border border-orange-500/20 text-orange-400 hover:bg-orange-500/25 hover:text-orange-300 flex items-center justify-center transition-all shrink-0 disabled:opacity-40"
+              title="Dodaj sliku"
+            >
+              {uploading ? (
+                <div className="w-4 h-4 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <ImageIcon className="w-4 h-4" />
+              )}
+            </button>
+            {areaSupportsText && (
+              <button
+                onClick={() => {
+                  if (currentText) {
+                    setEditingText(currentText);
+                    setShowTextEditor(true);
+                  } else {
+                    addText();
+                  }
+                }}
+                className="h-9 w-9 rounded-lg bg-fuchsia-500/15 border border-fuchsia-500/20 text-fuchsia-400 hover:bg-fuchsia-500/25 hover:text-fuchsia-300 flex items-center justify-center transition-all shrink-0"
+                title={currentText ? 'Uredi tekst' : 'Dodaj tekst'}
+              >
+                <Type className="w-4 h-4" />
+              </button>
+            )}
             {(currentGraphic || currentText) && (
               <button
                 onClick={handleDeleteClick}
-                className="p-1.5 rounded bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors flex-shrink-0"
+                className="h-9 w-9 rounded-lg bg-red-500/10 border border-red-500/15 text-red-400 hover:bg-red-500/20 hover:text-red-300 flex items-center justify-center transition-all shrink-0"
                 title="Obriši"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
         </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden lg:block"
+          disabled={uploading}
+        />
 
-        {/* Grid canvas - flexible height */}
-        <div className="flex-1 p-3 min-h-0">
-          {/* Mode toggle when both image and text exist */}
+        {/* Positioning Grid */}
+        <div className="flex-1 px-3 pb-2 min-h-0 flex flex-col gap-2">
           {currentGraphic && currentText && (
-            <div className="flex gap-1 mb-2">
+            <div className="flex gap-1 p-0.5 bg-white/[0.04] rounded-lg">
               <button
                 onClick={() => setPositioningMode('image')}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${
                   positioningMode === 'image'
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-white/10 text-gray-400 hover:bg-white/15'
+                    ? 'bg-orange-500/90 text-white'
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                <ImageIcon className="w-3.5 h-3.5" />
-                <span>Uređivanje slike</span>
+                <ImageIcon className="w-3 h-3" />
+                Slika
               </button>
               <button
                 onClick={() => setPositioningMode('text')}
-                className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-colors ${
+                className={`flex-1 py-1.5 rounded-md text-[10px] font-medium flex items-center justify-center gap-1 transition-all ${
                   positioningMode === 'text'
-                    ? 'bg-fuchsia-500 text-white'
-                    : 'bg-white/10 text-gray-400 hover:bg-white/15'
+                    ? 'bg-fuchsia-500/90 text-white'
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
-                <Type className="w-3.5 h-3.5" />
-                <span>Uređivanje teksta</span>
+                <Type className="w-3 h-3" />
+                Tekst
               </button>
             </div>
           )}
-          
+
           <div
             ref={gridRef}
-            className={`relative w-full ${currentGraphic && currentText ? 'h-[calc(100%-2.5rem)]' : 'h-full'} bg-white/5 rounded-xl overflow-hidden cursor-crosshair select-none`}
+            className="relative w-full flex-1 bg-gradient-to-b from-white/[0.03] to-transparent rounded-xl border border-white/[0.06] overflow-hidden cursor-crosshair select-none"
             style={{
               backgroundImage: `
-                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)
               `,
               backgroundSize: '20px 20px',
             }}
@@ -1027,10 +1245,13 @@ export default function EditorPage() {
             onTouchMove={handleGridMouseMove}
             onTouchEnd={handleGridMouseUp}
           >
-            {/* Image position indicator (crosshair) on grid */}
+            {/* Center guidelines */}
+            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/[0.04]" />
+            <div className="absolute top-1/2 left-0 right-0 h-px bg-white/[0.04]" />
+
             {currentGraphic && (
               <div
-                className={`absolute pointer-events-none transition-opacity ${positioningMode === 'image' ? 'opacity-100' : 'opacity-40'}`}
+                className={`absolute pointer-events-none transition-opacity duration-200 ${positioningMode === 'image' ? 'opacity-100' : 'opacity-30'}`}
                 style={{
                   left: `${currentGraphic.position.x}%`,
                   top: `${currentGraphic.position.y}%`,
@@ -1044,11 +1265,10 @@ export default function EditorPage() {
                 </div>
               </div>
             )}
-            
-            {/* Text position indicator on grid */}
+
             {currentText && (
               <div
-                className={`absolute pointer-events-none transition-opacity ${positioningMode === 'text' ? 'opacity-100' : 'opacity-40'}`}
+                className={`absolute pointer-events-none transition-opacity duration-200 ${positioningMode === 'text' ? 'opacity-100' : 'opacity-30'}`}
                 style={{
                   left: `${currentText.position.x}%`,
                   top: `${currentText.position.y}%`,
@@ -1065,150 +1285,85 @@ export default function EditorPage() {
               </div>
             )}
 
-            {/* Empty state */}
             {!currentGraphic && !currentText && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-gray-500 text-xs text-center px-4">
-                  Dodaj sliku ili tekst da započneš dizajniranje
-                </p>
+                <div className="text-center px-6">
+                  <div className="w-10 h-10 rounded-xl bg-white/[0.05] flex items-center justify-center mx-auto mb-2">
+                    <ImageIcon className="w-5 h-5 text-gray-600" />
+                  </div>
+                  <p className="text-gray-600 text-[11px]">
+                    Dodaj sliku ili tekst za pozicioniranje
+                  </p>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* Controls - always visible */}
-        <div className="p-3 space-y-3 border-t border-white/10">
-          {/* Add Photo and Text buttons */}
-          <div className="flex gap-2 min-w-0">
-            <select
-              value={selectedSize}
-              onChange={(e) => setSelectedSize(e.target.value)}
-              title="Veličina (obavezno)"
-              className="w-full min-w-0 shrink basis-0 flex-1 py-2.5 pl-3 pr-10 bg-white/10 border border-white/10 rounded text-white text-sm appearance-none cursor-pointer focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/30"
-              style={{
-                backgroundImage: SIZE_SELECT_CHEVRON_BG,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.65rem center',
-                backgroundSize: '1rem 1rem',
-              }}
-            >
-              <option value="">Veličina*</option>
-              {GARMENT_SIZE_OPTIONS.map((size) => (
-                <option key={size} value={size}>{size}</option>
-              ))}
-            </select>
+        {/* Scale */}
+        <div className="px-3 pb-3">
+          <div className="flex items-center gap-2 bg-white/[0.03] rounded-lg px-2 py-1.5">
             <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="min-w-0 shrink basis-0 flex-1 py-2.5 px-2 sm:px-3 bg-orange-500 hover:bg-orange-600 text-white rounded font-medium flex items-center justify-center gap-1.5 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={decreaseScale}
+              disabled={
+                (positioningMode === 'image' && !currentGraphic) ||
+                (positioningMode === 'text' && !currentText)
+              }
+              className="p-1 rounded text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              {uploading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span className="hidden sm:inline">Učitavanje...</span>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-4 h-4" />
-                  <span>Slika</span>
-                </>
-              )}
+              <Minus className="w-3.5 h-3.5" />
             </button>
-            {/* Add Text button - only show for front/back areas */}
-            {areaSupportsText && (
-              <button
-                onClick={() => {
-                  if (currentText) {
-                    setEditingText(currentText);
-                    setShowTextEditor(true);
-                  } else {
-                    addText();
+            <input
+              type="range"
+              min={positioningMode === 'image' ? '0.2' : '12'}
+              max={positioningMode === 'image' ? '7' : '72'}
+              step={positioningMode === 'image' ? '0.1' : '2'}
+              value={
+                positioningMode === 'image'
+                  ? currentGraphic?.scale || 1
+                  : currentText?.fontSize || 24
+              }
+              onChange={(e) => {
+                if (positioningMode === 'image') {
+                  const newScale = parseFloat(e.target.value);
+                  if (currentGraphic) {
+                    setGraphics(prev => ({
+                      ...prev,
+                      [selectedArea]: { ...prev[selectedArea]!, scale: newScale },
+                    }));
                   }
-                }}
-                className="min-w-0 shrink basis-0 flex-1 py-2.5 px-2 sm:px-3 bg-fuchsia-500/20 hover:bg-fuchsia-500/30 text-fuchsia-300 hover:text-white rounded font-medium flex items-center justify-center gap-1.5 transition-colors text-sm border border-fuchsia-500/30"
-              >
-                <Type className="w-4 h-4 shrink-0" />
-                <span className="truncate">{currentText ? 'Uredi tekst' : 'Tekst'}</span>
-              </button>
-            )}
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-            disabled={uploading}
-          />
-
-          {/* Scale slider */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Veličina</span>
-              <span className="text-xs font-mono text-white">
-                {positioningMode === 'image'
-                  ? currentGraphic
-                    ? `${currentGraphic.scale.toFixed(1)}x`
-                    : '1.0x'
-                  : currentText
-                    ? `${currentText.fontSize}pt`
-                    : '24pt'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={decreaseScale}
-                disabled={
-                  (positioningMode === 'image' && !currentGraphic) ||
-                  (positioningMode === 'text' && !currentText)
-                }
-                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
-              <input
-                type="range"
-                min={positioningMode === 'image' ? '0.2' : '12'}
-                max={positioningMode === 'image' ? '7' : '72'}
-                step={positioningMode === 'image' ? '0.1' : '2'}
-                value={
-                  positioningMode === 'image'
-                    ? currentGraphic?.scale || 1
-                    : currentText?.fontSize || 24
-                }
-                onChange={(e) => {
-                  if (positioningMode === 'image') {
-                    const newScale = parseFloat(e.target.value);
-                    if (currentGraphic) {
-                      setGraphics(prev => ({
-                        ...prev,
-                        [selectedArea]: { ...prev[selectedArea]!, scale: newScale },
-                      }));
-                    }
-                  } else if (positioningMode === 'text') {
-                    const newSize = parseInt(e.target.value, 10);
-                    if (areaSupportsText && currentText) {
-                      updateText({ fontSize: newSize });
-                    }
+                } else if (positioningMode === 'text') {
+                  const newSize = parseInt(e.target.value, 10);
+                  if (areaSupportsText && currentText) {
+                    updateText({ fontSize: newSize });
                   }
-                }}
-                disabled={
-                  (positioningMode === 'image' && !currentGraphic) ||
-                  (positioningMode === 'text' && !currentText)
                 }
-                className="flex-1 h-2 bg-white/10 rounded-full cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:bg-orange-500 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
-              />
-              <button
-                onClick={increaseScale}
-                disabled={
-                  (positioningMode === 'image' && !currentGraphic) ||
-                  (positioningMode === 'text' && !currentText)
-                }
-                className="p-2 rounded-lg bg-white/10 text-white hover:bg-white/15 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
+              }}
+              disabled={
+                (positioningMode === 'image' && !currentGraphic) ||
+                (positioningMode === 'text' && !currentText)
+              }
+              className="flex-1 h-1 bg-white/10 rounded-full cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:bg-orange-500 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:cursor-pointer [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:bg-orange-500 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:cursor-pointer"
+            />
+            <button
+              onClick={increaseScale}
+              disabled={
+                (positioningMode === 'image' && !currentGraphic) ||
+                (positioningMode === 'text' && !currentText)
+              }
+              className="p-1 rounded text-gray-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] font-mono text-gray-500 w-8 text-right tabular-nums">
+              {positioningMode === 'image'
+                ? currentGraphic
+                  ? `${currentGraphic.scale.toFixed(1)}x`
+                  : '1.0x'
+                : currentText
+                  ? `${currentText.fontSize}pt`
+                  : '24pt'}
+            </span>
           </div>
         </div>
       </div>
